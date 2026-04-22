@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Firebase Image Upload + ThingsBoard</title>
+
+<style>
+body{
+font-family:Segoe UI;
+background:#f1f5f9;
+padding:20px;
+}
+
+.container{
+background:white;
+padding:20px;
+border-radius:12px;
+max-width:600px;
+margin:auto;
+}
+
+img{
+max-width:200px;
+border-radius:8px;
+margin-top:10px;
+display:block;
+}
+
+button{
+padding:8px 12px;
+background:#2563eb;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+margin-right:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h3>📸 Firebase Image Upload Test</h3>
+
+<input type="file" id="fileInput" accept="image/*"><br><br>
+
+<button onclick="uploadImage()">Upload</button>
+<button onclick="loadImages()">Load Images</button>
+
+<hr>
+
+<div id="output"></div>
+
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+<script>
+
+// ================= CONFIG =================
+const firebaseConfig = {
+  apiKey: "AIzaSyCGEVEZmCkPS8uVfIrqQsNABeS1tnM59GQ",
+  authDomain: "plantwiz-a9472.firebaseapp.com",
+  projectId: "plantwiz-a9472",
+  storageBucket: "plantwiz-a9472.firebasestorage.app",
+  messagingSenderId: "197646308805",
+  appId: "1:197646308805:web:0938e0acc9124c091ce7ac"
+};
+
+firebase.initializeApp(firebaseConfig);
+const storage = firebase.storage();
+
+// ================= THINGSBOARD CONFIG =================
+const API = "https://plantwiz.pimateck.in/api";
+const DEVICE_ID = "2b113dd0-2ce1-11f1-91db-cbfa9ac9843b";
+
+// ✅ JWT auto from URL (NO PROMPT)
+const JWT = new URLSearchParams(window.location.search).get("token");
+console.log("JWT AUTO:", JWT);
+const params = new URLSearchParams(window.location.search);
+const ticketNumber = params.get("ticket");
+
+console.log("TICKET:", ticketNumber);
+// ================= UPLOAD =================
+async function uploadImage(){
+
+const file = document.getElementById("fileInput").files[0];
+
+if(!file){
+alert("Select file first");
+return;
+}
+
+const fileName = Date.now() + "_" + file.name;
+const storageRef = storage.ref("tickets/" + fileName);
+
+try {
+
+// upload
+await storageRef.put(file);
+
+// get URL
+const url = await storageRef.getDownloadURL();
+const ts = Date.now();
+
+console.log("IMAGE URL:", url);
+
+// send to TB
+const res = await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
+method:"POST",
+headers:{
+"X-Authorization":"Bearer " + JWT,
+"Content-Type":"application/json"
+},
+body: JSON.stringify([{
+  ts: ts,
+  values:{
+    image: url,
+    image_number: ticketNumber
+  }
+}])
+});
+
+// status check
+console.log("STATUS:", res.status);
+
+// ❌ DON'T use res.json()
+const text = await res.text();
+console.log("RAW RESPONSE:", text);
+
+if(!res.ok){
+  alert("❌ Telemetry failed");
+  return;
+}
+
+console.log("✅ Image Saved");
+alert("✅ Uploaded + Saved");
+
+loadImages();
+
+} catch(err){
+console.error("❌ ERROR:", err);
+alert("Upload failed");
+}
+
+}
+
+// ================= LOAD =================
+async function loadImages(){
+
+try {
+
+const res = await fetch(
+`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=image&limit=20&agg=NONE`,
+{
+headers:{
+"X-Authorization":"Bearer " + JWT
+}
+});
+
+console.log("LOAD STATUS:", res.status);
+
+// ❌ safe parse
+const text = await res.text();
+console.log("LOAD RAW:", text);
+
+let data = {};
+try{
+  data = JSON.parse(text);
+}catch(e){
+  console.warn("Not JSON response");
+}
+
+output.innerHTML = "";
+
+(data.image || []).forEach(p => {
+
+output.innerHTML += `
+<div>
+<img src="${p.value}">
+<hr>
+</div>
+`;
+
+});
+
+} catch(err){
+console.error("❌ LOAD ERROR:", err);
+}
+
+}
+
+</script>
+
+</body>
+</html>

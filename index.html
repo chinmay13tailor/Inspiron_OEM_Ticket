@@ -473,6 +473,25 @@ font-size:13px;
 
   </div>
 </div>
+  <div class="popup" id="assignPopup">
+  <div class="popupContent">
+
+    <h3>Assign Engineer</h3>
+
+    <select id="engineerSelect">
+      <option value="">Select Engineer</option>
+      <option value="Engineer1">Engineer1</option>
+      <option value="Engineer2">Engineer2</option>
+      <option value="Engineer3">Engineer3</option>
+    </select>
+
+    <div style="margin-top:15px;">
+      <button onclick="submitAssign()">Submit</button>
+      <button onclick="closeAssignPopup()">Cancel</button>
+    </div>
+
+  </div>
+</div>
 <!-- 🔥 YAHAN PASTE KARNA HAI (image popup ke turant baad) -->
 
 <!-- GALLERY POPUP -->
@@ -800,27 +819,22 @@ margin-top:5px;
   </div>
 
 <div>
-  <div style="font-size:12px; color:#777;">Assign Engineer</div>
+<div>
+  <div style="font-size:12px; color:#777;">Assigned To</div>
 
-  <select id="assignDropdown" style="margin-top:6px;">
+  <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
 
-    <option value="">Select Engineer</option>
-    <option value="Engineer1">Engineer1</option>
-    <option value="Engineer2">Engineer2</option>
-    <option value="Engineer3">Engineer3</option>
+    <div style="font-weight:600;">
+      👤 ${t.ticket_assign_to || "Unassigned"}
+    </div>
 
-  </select>
+    <button 
+      style="padding:4px 10px; font-size:12px;"
+      onclick="openAssignPopup()">
+      Assign
+    </button>
 
-  <button 
-    style="margin-top:8px;" 
-    onclick="confirmAssign()">
-    Assign
-  </button>
-
-  <div style="margin-top:6px; font-size:12px; color:#555;">
-    Current: 👤 ${t.ticket_assign_to || "Unassigned"}
   </div>
-
 </div>
 
   <!-- STATUS FULL WIDTH -->
@@ -1089,6 +1103,45 @@ async function updateStatus(){
   // refresh selected ticket
   setTimeout(()=> selectTicket(selectedTicket), 300);
 } 
+
+function openAssignPopup(){
+  document.getElementById("assignPopup").style.display = "flex";
+}
+
+function closeAssignPopup(){
+  document.getElementById("assignPopup").style.display = "none";
+}
+
+async function submitAssign(){
+
+  const engineer = document.getElementById("engineerSelect").value;
+
+  if(!engineer){
+    alert("Select engineer");
+    return;
+  }
+
+  await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
+    method:"POST",
+    headers:{
+      "X-Authorization":"Bearer "+JWT,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify([{
+      ts:Date.now(),
+      values:{
+        ticket_number:selectedTicket,
+        ticket_assign_to:engineer
+      }
+    }])
+  });
+
+  closeAssignPopup();
+
+  loadTickets();
+
+  setTimeout(()=> selectTicket(selectedTicket), 300);
+}  
   
 </script>
 </body>

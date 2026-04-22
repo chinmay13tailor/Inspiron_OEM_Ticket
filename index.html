@@ -809,8 +809,10 @@ margin-top:5px;
     </div>
 
     <!-- ROW 2 -->
- <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px;">
+ <!-- ROW 2 -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px;">
   
+  <!-- Created -->
   <div>
     <div style="font-size:12px; color:#777;">Created</div>
     <div style="font-weight:600;">
@@ -818,47 +820,46 @@ margin-top:5px;
     </div>
   </div>
 
-<div>
-  <div style="font-size:12px; color:#777;">Assigned To</div>
+  <!-- Assigned -->
+  <div>
+    <div style="font-size:12px; color:#777;">Assigned To</div>
 
-  <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
-    <div style="font-weight:600;">
-      👤 ${t.ticket_assign_to || "Unassigned"}
+    <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+      <div style="font-weight:600;">
+        👤 ${t.ticket_assign_to || "Unassigned"}
+      </div>
+
+      <button 
+        style="padding:4px 10px; font-size:12px;"
+        onclick="openAssignPopup()">
+        Assign
+      </button>
     </div>
-
-    <button 
-      style="padding:4px 10px; font-size:12px;"
-      onclick="openAssignPopup()">
-      Assign
-    </button>
-  </div>
-</div>
-  <!-- STATUS FULL WIDTH -->
-  <div style="grid-column: span 2; margin-top:10px;">
-
-    <div style="font-size:12px; color:#777; margin-bottom:8px;">
-      Update Status
-    </div>
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-
-      <button style="background:#ef4444;" onclick="confirmStatusChange('OPEN')">Open</button>
-
-      <button style="background:#f59e0b;" onclick="confirmStatusChange('IN_PROGRESS')">In Progress</button>
-
-      <button style="background:#22c55e;" onclick="confirmStatusChange('RESOLVED')">Resolved</button>
-
-      <button style="background:#9ca3af;" onclick="confirmStatusChange('CLOSED')">Closed</button>
-
-    </div>
-
   </div>
 
 </div>
 
-    </div>
+<!-- STATUS (OUTSIDE GRID) -->
+<div style="margin-top:15px;">
+
+  <div style="font-size:12px; color:#777; margin-bottom:8px;">
+    Update Status
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+    <button style="background:#ef4444;" onclick="confirmStatusChange('OPEN')">Open</button>
+
+    <button style="background:#f59e0b;" onclick="confirmStatusChange('IN_PROGRESS')">In Progress</button>
+
+    <button style="background:#22c55e;" onclick="confirmStatusChange('RESOLVED')">Resolved</button>
+
+    <button style="background:#9ca3af;" onclick="confirmStatusChange('CLOSED')">Closed</button>
 
   </div>
+
+</div>
+</div> 
   <!-- RIGHT SIDE -->
   <div style="width:100%;">
 

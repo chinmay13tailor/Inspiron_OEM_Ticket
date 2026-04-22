@@ -534,18 +534,41 @@ const ticketMap = {};
 });
 
 // STEP 2
-["ticket_subject","ticket_status","ticket_customer","ticket_machine","ticket_assign_to","ticket_criticality","ticket_description"].forEach(key=>{
+// STEP 2 (FIXED LOGIC)
+
+// 🔹 First handle all fields normally (EXCEPT status)
+["ticket_subject","ticket_customer","ticket_machine","ticket_assign_to","ticket_criticality","ticket_description"].forEach(key=>{
+  
   (data[key] || []).forEach(p => {
 
-    const match = (data.ticket_number || []).find(tn => 
-      Math.abs(tn.ts - p.ts) < 10000
-    );
+    const match = (data.ticket_number || []).find(tn => tn.ts === p.ts);
 
     if(match && ticketMap[match.value]){
       ticketMap[match.value][key] = p.value;
     }
 
   });
+
+});
+
+// 🔥 SPECIAL: HANDLE STATUS (LATEST ONLY)
+
+(data.ticket_status || []).forEach(p => {
+
+  const match = (data.ticket_number || []).find(tn => tn.ts === p.ts);
+
+  if(match){
+
+    const ticket = ticketMap[match.value];
+
+    // 👉 store only latest status
+    if(!ticket.ticket_status_ts || p.ts > ticket.ticket_status_ts){
+      ticket.ticket_status = p.value;
+      ticket.ticket_status_ts = p.ts;
+    }
+
+  }
+
 });
 
 // STORE

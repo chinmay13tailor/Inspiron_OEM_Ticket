@@ -556,14 +556,24 @@ const ticketMap = {};
 // STEP 2 (FIXED LOGIC)
 
 // 🔹 First handle all fields normally (EXCEPT status)
+// 🔥 HANDLE ALL FIELDS WITH LATEST LOGIC
+
 ["ticket_subject","ticket_customer","ticket_machine","ticket_assign_to","ticket_criticality","ticket_description"].forEach(key=>{
-  
+
   (data[key] || []).forEach(p => {
 
     const match = (data.ticket_number || []).find(tn => tn.ts === p.ts);
 
-    if(match && ticketMap[match.value]){
-      ticketMap[match.value][key] = p.value;
+    if(match){
+
+      const ticket = ticketMap[match.value];
+
+      // 🔥 store only latest value
+      if(!ticket[key + "_ts"] || p.ts > ticket[key + "_ts"]){
+        ticket[key] = p.value;
+        ticket[key + "_ts"] = p.ts;
+      }
+
     }
 
   });

@@ -1111,7 +1111,8 @@ async function updateStatus(){
   loadTickets();
 
   // refresh selected ticket
-  setTimeout(()=> selectTicket(selectedTicket), 300);
+  await loadTickets();
+selectTicket(selectedTicket);
 } 
 
 function openAssignPopup(){
@@ -1150,7 +1151,8 @@ async function submitAssign(){
 
   loadTickets();
 
-  setTimeout(()=> selectTicket(selectedTicket), 300);
+  await loadTickets();
+selectTicket(selectedTicket);
 }  
   
 </script>

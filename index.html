@@ -410,13 +410,8 @@ font-size:13px;
 <option value="MEDIUM">MEDIUM</option>
 <option value="HIGH">HIGH</option>
 </select>
-
-<button onclick="openPopup()">Create</button>
-
 </div>
-
 </div>
-
 <div id="ticketList" class="ticketList"></div>
 
 </div>
@@ -445,33 +440,6 @@ font-size:13px;
 
 </div>
 </div>
-<!-- POPUP -->
-<div class="popup" id="popup">
-<div class="popupContent">
-
-<h3>Create Ticket</h3>
-
-<select id="machine">
-<option>MC_01</option>
-<option>MC_02</option>
-<option>MC_03</option>
-</select>
-
-<input id="subject" placeholder="Subject">
-<textarea id="desc"></textarea>
-
-<select id="priority">
-<option>LOW</option>
-<option>MEDIUM</option>
-<option>HIGH</option>
-</select>
-
-<button onclick="createTicket()">Create</button>
-<button onclick="closePopup()">Cancel</button>
-
-</div>
-</div>
-<!-- IMAGE POPUP -->
 <!-- IMAGE POPUP -->
 <div class="popup" id="imagePopup">
   <div class="popupContent" style="width:80%; max-width:1000px; max-height:80vh; overflow-y:auto;">
@@ -489,7 +457,22 @@ font-size:13px;
 
   </div>
 </div>
+<!-- STATUS CONFIRM POPUP -->
+<div class="popup" id="statusPopup">
+  <div class="popupContent">
 
+    <h3>Confirm Status Change</h3>
+
+    <div style="margin:10px 0;">
+      <b>Current:</b> <span id="currentStatus"></span><br>
+      <b>New:</b> <span id="newStatus"></span>
+    </div>
+
+    <button onclick="updateStatus()">Submit</button>
+    <button onclick="closeStatusPopup()">Cancel</button>
+
+  </div>
+</div>
 <!-- 🔥 YAHAN PASTE KARNA HAI (image popup ke turant baad) -->
 
 <!-- GALLERY POPUP -->
@@ -521,40 +504,6 @@ const JWT=new URLSearchParams(location.search).get("token")||"";
 
 let selectedTicket=null;
 let fullTicketList = [];
-
-// POPUP
-function openPopup(){popup.style.display="flex";}
-function closePopup(){popup.style.display="none";}
-
-// CREATE
-async function createTicket(){
-
-const num="ABC-"+Date.now();
-const ts = Date.now();
-
-await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
-method:"POST",
-headers:{
-"X-Authorization":"Bearer "+JWT,
-"Content-Type":"application/json"
-},
-body:JSON.stringify([{
-ts:ts,
-values:{
-ticket_number:num,
-ticket_subject:subject.value,
-ticket_description:desc.value,
-ticket_machine:machine.value,
-ticket_customer:"ABC",
-ticket_status:"OPEN",
-ticket_criticality:priority.value
-}
-}])
-});
-
-closePopup();
-loadTickets();
-}
 
 // ================= LOAD TICKETS =================
 async function loadTickets(){
@@ -818,17 +767,44 @@ margin-top:5px;
     </div>
 
     <!-- ROW 2 -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px;">
-      
-      <div>
-        <div style="font-size:12px; color:#777;">Created</div>
-        <div style="font-weight:600;">
-          ${new Date(t.ts).toLocaleString()}
-        </div>
-      </div>
+ <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px;">
+  
+  <div>
+    <div style="font-size:12px; color:#777;">Created</div>
+    <div style="font-weight:600;">
+      ${new Date(t.ts).toLocaleString()}
+    </div>
+  </div>
 
-      <div>
-        <div style="font-size:12px; color:#777;">Assigned To</div>
+  <div>
+    <div style="font-size:12px; color:#777;">Assigned To</div>
+    <div style="font-weight:600;">
+      👤 ${t.ticket_assign_to || "Unassigned"}
+    </div>
+  </div>
+
+  <!-- STATUS FULL WIDTH -->
+  <div style="grid-column: span 2; margin-top:10px;">
+
+    <div style="font-size:12px; color:#777; margin-bottom:8px;">
+      Update Status
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+      <button style="background:#ef4444;" onclick="confirmStatusChange('OPEN')">Open</button>
+
+      <button style="background:#f59e0b;" onclick="confirmStatusChange('IN_PROGRESS')">In Progress</button>
+
+      <button style="background:#22c55e;" onclick="confirmStatusChange('RESOLVED')">Resolved</button>
+
+      <button style="background:#9ca3af;" onclick="confirmStatusChange('CLOSED')">Closed</button>
+
+    </div>
+
+  </div>
+
+</div>
         <div style="font-weight:600;">
           👤 ${t.ticket_assign_to || "Unassigned"}
         </div>
@@ -928,8 +904,8 @@ body:JSON.stringify([{
 ts:Date.now(),
 values:{
 chat_number:selectedTicket,
-chat_sender_type:"CUSTOMER",
-chat_sender_name:"ABC User",
+chat_sender_type:"OEM",
+chat_sender_name:"Inspiron",
 chat_message:chatInput.value,
 chat_time: Date.now()
 }
@@ -1039,6 +1015,48 @@ html += `
     container.innerHTML = "Error loading images";
   }
 }
+
+ let selectedStatus = null;
+
+function confirmStatusChange(status){
+
+  const t = fullTicketList.find(x => x.ticket_number === selectedTicket);
+
+  selectedStatus = status;
+
+  document.getElementById("currentStatus").innerText = (t.ticket_status || "OPEN");
+  document.getElementById("newStatus").innerText = status;
+
+  document.getElementById("statusPopup").style.display = "flex";
+}
+
+function closeStatusPopup(){
+  document.getElementById("statusPopup").style.display = "none";
+}
+
+async function updateStatus(){
+
+  await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
+    method:"POST",
+    headers:{
+      "X-Authorization":"Bearer "+JWT,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify([{
+      ts:Date.now(),
+      values:{
+        ticket_number:selectedTicket,
+        ticket_status:selectedStatus
+      }
+    }])
+  });
+
+  closeStatusPopup();
+  loadTickets();
+
+  // refresh selected ticket
+  setTimeout(()=> selectTicket(selectedTicket), 300);
+} 
   
 </script>
 </body>

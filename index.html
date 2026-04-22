@@ -523,6 +523,7 @@ const JWT=new URLSearchParams(location.search).get("token")||"";
 
 let selectedTicket=null;
 let fullTicketList = [];
+let chatInterval = null;
 
 // ================= LOAD TICKETS =================
 async function loadTickets(){
@@ -896,6 +897,17 @@ margin-top:5px;
 </div>
 `;
 loadChat(num);
+  // 🔥 CLEAR OLD INTERVAL
+if(chatInterval){
+  clearInterval(chatInterval);
+}
+
+// 🔥 START AUTO REFRESH
+chatInterval = setInterval(()=>{
+  if(selectedTicket){
+    loadChat(selectedTicket);
+  }
+}, 3000);
 
 // ACTIVE UI
 document.querySelectorAll('.ticket').forEach(el=>{
@@ -938,13 +950,27 @@ chat.innerHTML="";
 
 chats.forEach(c=>{
 chat.innerHTML+=`
-<div class="msg ${c.chat_sender_type==="OEM"?"oem":"customer"}">
-<b>${c.chat_sender_name}</b><br>
-${c.chat_message}
+<div class="msg ${c.chat_sender_type==="OEM"?"oem":"customer"}" style="position:relative;">
+
+  <b>${c.chat_sender_name}</b><br>
+  ${c.chat_message}
+
+  <div style="
+    font-size:10px;
+    color:#555;
+    text-align:right;
+    margin-top:5px;
+  ">
+    ${new Date(c.chat_time || c.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+  </div>
+
 </div>
 `;
 });
+// 🔥 ADD THIS LINE HERE
+chat.scrollTop = chat.scrollHeight;
 
+}
 }
 
 // ================= SEND =================
@@ -969,7 +995,7 @@ chat_time: Date.now()
 });
 
 chatInput.value="";
-loadChat(selectedTicket);
+await loadChat(selectedTicket);
 }
 
 // INIT

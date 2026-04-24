@@ -651,7 +651,6 @@ const ticketMap = {};
 // STORE
 fullTicketList = Object.values(ticketMap);
 fullTicketList = fullTicketList.filter(t => 
-fullTicketList = fullTicketList.filter(t => 
   (t.ticket_customer || "").trim().toUpperCase() === "ABC"
 );
 

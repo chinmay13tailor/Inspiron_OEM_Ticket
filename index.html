@@ -567,6 +567,7 @@ font-size:13px;
   </div>
 
 <script>
+console.log("🔥 SCRIPT START");
 let currentTab = "image";
 const API="https://plantwiz.pimateck.in/api";
 const DEVICE_ID="2b113dd0-2ce1-11f1-91db-cbfa9ac9843b";
@@ -578,7 +579,7 @@ let chatInterval = null;
 
 // ================= LOAD TICKETS =================
 async function loadTickets(){
-
+console.log("🚀 loadTickets RUNNING");
 const res = await fetch(
 `${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=ticket_number,ticket_subject,ticket_status,ticket_customer,ticket_machine,ticket_assign_to,ticket_criticality,ticket_description&startTs=0&endTs=${Date.now()}&limit=10000&agg=NONE`,
 {
@@ -1045,7 +1046,11 @@ let ticketInterval = null;
 
 async function init(){
 
+  console.log("🔥 INIT CALLED");
+
   await loadTickets();
+
+  console.log("🔥 AFTER LOAD");
 
   if(ticketInterval){
     clearInterval(ticketInterval);
@@ -1053,18 +1058,12 @@ async function init(){
 
   ticketInterval = setInterval(async ()=>{
 
-    await loadTickets();
+    console.log("⏱ REFRESH");
 
-    if(selectedTicket){
-      const t = fullTicketList.find(x => x.ticket_number === selectedTicket);
-      if(t){
-        selectTicket(selectedTicket);
-      }
-    }
+    await loadTickets();
 
   }, 5000);
 }
-
 // 👉 CALL INIT
 init();
 

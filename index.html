@@ -1041,7 +1041,32 @@ await loadChat(selectedTicket);
 }
 
 // INIT
-loadTickets();
+let ticketInterval = null;
+
+async function init(){
+
+  await loadTickets();
+
+  if(ticketInterval){
+    clearInterval(ticketInterval);
+  }
+
+  ticketInterval = setInterval(async ()=>{
+
+    await loadTickets();
+
+    if(selectedTicket){
+      const t = fullTicketList.find(x => x.ticket_number === selectedTicket);
+      if(t){
+        selectTicket(selectedTicket);
+      }
+    }
+
+  }, 5000);
+}
+
+// 👉 CALL INIT
+init();
 
   function openImagePopup(){
 
@@ -1267,32 +1292,7 @@ async function submitAssign(){
 
   closeAssignPopup();
 
-  let ticketInterval = null;
-
-async function init(){
-
-  await loadTickets();
-
-  if(ticketInterval){
-    clearInterval(ticketInterval);
-  }
-
-  ticketInterval = setInterval(async ()=>{
-
-    await loadTickets();
-
-    if(selectedTicket){
-      const t = fullTicketList.find(x => x.ticket_number === selectedTicket);
-      if(t){
-        selectTicket(selectedTicket);
-      }
-    }
-
-  }, 5000);
-}
-
-// 👉 CALL INIT
-init();
+  loadTickets();
 
   await loadTickets();
 selectTicket(selectedTicket);

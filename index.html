@@ -609,13 +609,22 @@ Object.keys(ticketMap).forEach(ticketNo => {
 
   const ticket = ticketMap[ticketNo];
 
-  // helper function
   const getLatest = (key) => {
     return (data[key] || [])
-      .filter(p => {
-        const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 50);
-        return match && match.value === ticketNo;
+      .map(p => {
+
+        const closest = (data.ticket_number || []).reduce((prev, curr) => {
+          return Math.abs(curr.ts - p.ts) < Math.abs(prev.ts - p.ts) ? curr : prev;
+        });
+
+        if(closest.value === ticketNo){
+          return p;
+        }
+
+        return null;
+
       })
+      .filter(x => x !== null)
       .sort((a,b)=> b.ts - a.ts)[0];
   };
 
@@ -633,10 +642,20 @@ console.log("AFTER STEP2:", ticketMap);
 Object.keys(ticketMap).forEach(ticketNo => {
 
   const latestStatus = (data.ticket_status || [])
-    .filter(p => {
-      const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 50);
-      return match && match.value === ticketNo;
+    .map(p => {
+
+      const closest = (data.ticket_number || []).reduce((prev, curr) => {
+        return Math.abs(curr.ts - p.ts) < Math.abs(prev.ts - p.ts) ? curr : prev;
+      });
+
+      if(closest.value === ticketNo){
+        return p;
+      }
+
+      return null;
+
     })
+    .filter(x => x !== null)
     .sort((a,b)=> b.ts - a.ts)[0];
 
   if(latestStatus){

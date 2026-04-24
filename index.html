@@ -648,10 +648,12 @@ console.log("BEFORE FILTER:", Object.values(ticketMap));
 // STORE
 fullTicketList = Object.values(ticketMap);
 console.log("FINAL LIST:", fullTicketList);
-fullTicketList.forEach(t=>{
-  console.log("Customer Value:", t.ticket_customer);
-});
-// APPLY FILTER
+fullTicketList = Object.values(ticketMap);
+
+fullTicketList = fullTicketList.filter(t => 
+  (t.ticket_customer || "").trim().toUpperCase() === "ABC"
+);
+
 applyFilters();
 }
 

@@ -587,8 +587,7 @@ headers:{"X-Authorization":"Bearer "+JWT}
 });
 
 const data = await res.json();
-
-// STEP 1
+console.log("JWT =", JWT)// STEP 1
 const ticketMap = {};
 
 (data.ticket_number || []).forEach(p => {
@@ -604,7 +603,7 @@ const ticketMap = {};
   }
 
 });
-
+console.log("JWT =", JWT)
 // STEP 2
 ["ticket_subject","ticket_customer","ticket_machine","ticket_assign_to","ticket_criticality","ticket_description"].forEach(key=>{
 

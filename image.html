@@ -6,34 +6,42 @@
 
 <style>
 body{
-font-family:Segoe UI;
-background:#f1f5f9;
-padding:20px;
+  font-family:Segoe UI;
+  background:#f1f5f9;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;   /* 👈 full center */
+  margin:0;
 }
 
 .container{
-background:white;
-padding:20px;
-border-radius:12px;
-max-width:600px;
-margin:auto;
-}
-
-img{
-max-width:200px;
-border-radius:8px;
-margin-top:10px;
-display:block;
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:100%;
+  max-width:420px;   /* 👈 compact */
+  margin:auto;
+  box-shadow:0 10px 25px rgba(0,0,0,0.1);
 }
 
 button{
-padding:8px 12px;
-background:#2563eb;
-color:white;
-border:none;
-border-radius:6px;
-cursor:pointer;
-margin-right:5px;
+  padding:10px;
+  width:100%;          /* 👈 full width */
+  background:#2563eb;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  margin-top:10px;
+}
+select, input{
+  width:100%;
+  padding:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  margin-top:6px;
 }
 </style>
 </head>
@@ -42,16 +50,29 @@ margin-right:5px;
 
 <div class="container">
 
-<h3>📸 Firebase Image Upload Test</h3>
+<h3 style="margin-bottom:15px;">📁 Upload Attachment</h3>
+  <!-- TYPE SELECT -->
+<div style="margin-bottom:10px;">
+  <label style="font-size:13px; color:#555; font-weight:500;">Select Type</label><br>
+  <select id="fileType">
+    <option value="image">Image</option>
+    <option value="pdf">PDF</option>
+  </select>
+</div>
 
-<input type="file" id="fileInput" accept="image/*"><br><br>
+<!-- FILE INPUT -->
+<div style="margin-bottom:10px;">
+  <label style="font-size:13px; color:#555; font-weight:500;">Choose File</label><br>
+  <input type="file" id="fileInput">
+</div>
 
-<button onclick="uploadImage()">Upload</button>
-<button onclick="loadImages()">Load Images</button>
-
-<hr>
-
-<div id="output"></div>
+<!-- STATUS -->
+<div id="statusText" style="
+  font-size:12px;
+  color:#666;
+  margin-bottom:10px;
+"></div>
+<button onclick="uploadImage()" id="uploadBtn">Upload</button>
 
 </div>
 
@@ -85,15 +106,28 @@ const params = new URLSearchParams(window.location.search);
 const ticketNumber = params.get("ticket");
 
 console.log("TICKET:", ticketNumber);
+
 // ================= UPLOAD =================
 async function uploadImage(){
 
 const file = document.getElementById("fileInput").files[0];
 
 if(!file){
-alert("Select file first");
-return;
+  alert("Select file first");
+  return;
 }
+
+// ✅ 👉 YAHI ADD KARO
+const btn = document.getElementById("uploadBtn");
+btn.disabled = true;
+
+// status
+const status = document.getElementById("statusText");
+status.innerText = "Uploading...";
+status.style.color = "#2563eb";
+
+const selectedType = document.getElementById("fileType").value;
+const isPDF = selectedType === "pdf";
 
 const fileName = Date.now() + "_" + file.name;
 const storageRef = storage.ref("tickets/" + fileName);
@@ -110,20 +144,30 @@ const ts = Date.now();
 console.log("IMAGE URL:", url);
 
 // send to TB
-const res = await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
-method:"POST",
-headers:{
-"X-Authorization":"Bearer " + JWT,
-"Content-Type":"application/json"
-},
-body: JSON.stringify([{
+  // ===== CREATE PAYLOAD =====
+const payload = {
   ts: ts,
-  values:{
-    image: url,
-    image_number: ticketNumber
-  }
-}])
+  values: {}
+};
+
+if(isPDF){
+  payload.values["pdf"] = url;
+  payload.values["pdf_number"] = ticketNumber;
+}else{
+  payload.values["image"] = url;
+  payload.values["image_number"] = ticketNumber;
+}
+
+// ===== SEND TO THINGSBOARD =====
+const res = await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
+  method:"POST",
+  headers:{
+    "X-Authorization":"Bearer " + JWT,
+    "Content-Type":"application/json"
+  },
+  body: JSON.stringify([payload])
 });
+
 
 // status check
 console.log("STATUS:", res.status);
@@ -138,58 +182,14 @@ if(!res.ok){
 }
 
 console.log("✅ Image Saved");
-alert("✅ Uploaded + Saved");
-
-loadImages();
-
+status.innerText = "✅ Upload Successful";
+status.style.color = "green";
+btn.disabled = false;
 } catch(err){
 console.error("❌ ERROR:", err);
-alert("Upload failed");
-}
-
-}
-
-// ================= LOAD =================
-async function loadImages(){
-
-try {
-
-const res = await fetch(
-`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=image&limit=20&agg=NONE`,
-{
-headers:{
-"X-Authorization":"Bearer " + JWT
-}
-});
-
-console.log("LOAD STATUS:", res.status);
-
-// ❌ safe parse
-const text = await res.text();
-console.log("LOAD RAW:", text);
-
-let data = {};
-try{
-  data = JSON.parse(text);
-}catch(e){
-  console.warn("Not JSON response");
-}
-
-output.innerHTML = "";
-
-(data.image || []).forEach(p => {
-
-output.innerHTML += `
-<div>
-<img src="${p.value}">
-<hr>
-</div>
-`;
-
-});
-
-} catch(err){
-console.error("❌ LOAD ERROR:", err);
+status.innerText = "❌ Upload Failed";
+status.style.color = "red";
+btn.disabled = false;
 }
 
 }

@@ -340,7 +340,17 @@ font-size:13px;
   flex-direction:column;
   gap:10px;
 }
+.tabBtn{
+  background:#e5e7eb;
+  color:#333;
+  padding:6px 14px;
+  border-radius:8px;
+}
 
+.tabBtn.active{
+  background:#2563eb;
+  color:#fff;
+}
 
 /* COLORS */
 .kpiCard.total::before{background:#3b82f6;}
@@ -496,24 +506,54 @@ font-size:13px;
 
 <!-- GALLERY POPUP -->
 <div class="popup" id="galleryPopup">
- <div class="popupContent" style="width:80%; max-width:1000px;">
 
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3>📸 Gallery</h3>
+  <div class="popupContent" style="
+    width:90%;
+    max-width:1100px;
+    height:80vh;
+    display:flex;
+    flex-direction:column;
+    border-radius:14px;
+  ">
+
+    <!-- HEADER -->
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      border-bottom:1px solid #eee;
+      padding-bottom:8px;
+    ">
+
+      <div style="display:flex; flex-direction:column; width:100%;">
+
+        <h3>📸 Gallery</h3>
+
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button class="tabBtn active" onclick="switchTab('image')" id="imgTab">Images</button>
+          <button class="tabBtn" onclick="switchTab('pdf')" id="pdfTab">Files</button>
+        </div>
+
+      </div>
+
       <button onclick="closeGallery()">❌</button>
+
     </div>
 
-<div id="galleryContent" 
-     style="
-       margin-top:20px;
-       display:grid;
-       grid-template-columns:repeat(5, 1fr);
-       gap:10px;
-     ">
-</div>
-</div>
+    <!-- CONTENT -->
+    <div id="galleryContent" style="
+      margin-top:15px;
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(180px,200px));
+      gap:16px;
+      overflow-y:auto;
+      flex:1;
+      padding:20px;
+    ">
+    </div>
 
   </div>
+</div>
 </div>
 <script>
 
@@ -1014,6 +1054,8 @@ loadTickets();
 function closeImagePopup(){
   document.getElementById("imagePopup").style.display = "none";
 }
+let currentTab = "image";
+
 function openGallery(){
 
   document.getElementById("galleryPopup").style.display = "flex";
@@ -1022,6 +1064,11 @@ function openGallery(){
     document.getElementById("galleryContent").innerHTML = "No ticket selected";
     return;
   }
+
+  currentTab = "image";
+
+  document.getElementById("imgTab").classList.add("active");
+  document.getElementById("pdfTab").classList.remove("active");
 
   loadGalleryImages(selectedTicket);
 }
@@ -1032,12 +1079,12 @@ function closeGallery(){
   async function loadGalleryImages(ticketNumber){
 
   const container = document.getElementById("galleryContent");
-  container.innerHTML = "";
+  container.innerHTML = "Loading...";
 
   try{
 
     const res = await fetch(
-      `${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=image,image_number&startTs=0&endTs=${Date.now()}&limit=10000&agg=NONE`,
+      `${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=image,image_number,pdf,pdf_number&startTs=0&endTs=${Date.now()}&limit=10000&agg=NONE`,
       {
         headers: { "X-Authorization": "Bearer " + JWT }
       }
@@ -1045,54 +1092,112 @@ function closeGallery(){
 
     const data = await res.json();
 
-    if(!data.image || !data.image_number){
-      container.innerHTML = "No images found";
-      return;
-    }
-
     let html = "";
 
-    data.image.forEach(img => {
+    // 🔹 IMAGE TAB
+    if(currentTab === "image"){
 
-      const match = (data.image_number || []).find(n => n.ts === img.ts);
+      (data.image || []).forEach(img => {
 
-      if(match && match.value === ticketNumber){
+        const match = (data.image_number || []).find(n => Math.abs(n.ts - img.ts) < 5);
 
-html += `
-  <div style="
-    background:#fff;
-    border-radius:8px;
-    overflow:hidden;
-    box-shadow:0 2px 6px rgba(0,0,0,0.1);
-  ">
+        if(match && match.value === ticketNumber){
 
-    <img src="${img.value}" 
-         style="
-           width:100%;
-           height:120px;
-           object-fit:cover;
-         ">
+          html += `
+          <div style="
+            background:#fff;
+            border-radius:12px;
+            overflow:hidden;
+            box-shadow:0 4px 12px rgba(0,0,0,0.08);
+          ">
 
-    <div style="
-      font-size:10px;
-      padding:5px;
-      text-align:center;
-      color:#555;
-    ">
-      ${new Date(img.ts).toLocaleString()}
-    </div>
+            <img src="${img.value}" style="
+              width:100%;
+              height:140px;
+              object-fit:cover;
+            ">
 
-  </div>
-`;
-      }
+            <div style="font-size:11px; padding:8px; text-align:center;">
+              ${new Date(img.ts).toLocaleString()}
+            </div>
 
-    });
+          </div>
+          `;
+        }
 
-    container.innerHTML = html || "No images for this ticket";
+      });
+
+    }
+
+    // 🔹 PDF TAB
+    if(currentTab === "pdf"){
+
+      (data.pdf || []).forEach(file => {
+
+        const match = (data.pdf_number || []).find(n => Math.abs(n.ts - file.ts) < 5);
+
+        if(match && match.value === ticketNumber){
+
+          html += `
+          <div style="
+            background:#fff;
+            border-radius:12px;
+            padding:16px;
+            text-align:center;
+            box-shadow:0 4px 12px rgba(0,0,0,0.08);
+          ">
+
+            <div style="font-size:40px;">📄</div>
+
+            <div style="font-size:13px; font-weight:600;">PDF File</div>
+
+            <a href="${file.value}" target="_blank" style="
+              display:inline-block;
+              margin-top:10px;
+              padding:6px 14px;
+              background:#2563eb;
+              color:#fff;
+              border-radius:6px;
+              font-size:12px;
+              text-decoration:none;
+            ">
+              Open
+            </a>
+
+            <div style="font-size:10px; margin-top:6px;">
+              ${new Date(file.ts).toLocaleString()}
+            </div>
+
+          </div>
+          `;
+        }
+
+      });
+
+    }
+
+    container.innerHTML = html || "No files for this ticket";
 
   }catch(err){
     console.error(err);
-    container.innerHTML = "Error loading images";
+    container.innerHTML = "Error loading files";
+  }
+}
+  function switchTab(tab){
+
+  currentTab = tab;
+
+  document.getElementById("imgTab").classList.remove("active");
+  document.getElementById("pdfTab").classList.remove("active");
+
+  if(tab === "image"){
+    document.getElementById("imgTab").classList.add("active");
+  }else{
+    document.getElementById("pdfTab").classList.add("active");
+  }
+
+  if(selectedTicket){
+    loadGalleryImages(selectedTicket);
   }
 }
 

@@ -406,7 +406,6 @@ font-size:13px;
 <div class="container">
 
 <!-- LEFT -->
-<div class="left">
 
 <div class="left">
 
@@ -1268,7 +1267,32 @@ async function submitAssign(){
 
   closeAssignPopup();
 
-  loadTickets();
+  let ticketInterval = null;
+
+async function init(){
+
+  await loadTickets();
+
+  if(ticketInterval){
+    clearInterval(ticketInterval);
+  }
+
+  ticketInterval = setInterval(async ()=>{
+
+    await loadTickets();
+
+    if(selectedTicket){
+      const t = fullTicketList.find(x => x.ticket_number === selectedTicket);
+      if(t){
+        selectTicket(selectedTicket);
+      }
+    }
+
+  }, 5000);
+}
+
+// 👉 CALL INIT
+init();
 
   await loadTickets();
 selectTicket(selectedTicket);

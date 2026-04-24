@@ -610,7 +610,7 @@ const ticketMap = {};
 
   (data[key] || []).forEach(p => {
 
-    const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 50);
+    const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts));
 
     if(match){
 
@@ -632,7 +632,7 @@ const ticketMap = {};
 
 (data.ticket_status || []).forEach(p => {
 
-  const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 50);
+  const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts));
 
   if(match){
 

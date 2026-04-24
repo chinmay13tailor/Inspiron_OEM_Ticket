@@ -610,7 +610,7 @@ const ticketMap = {};
 
   (data[key] || []).forEach(p => {
 
-    const match = (data.ticket_number || []).find(tn => tn.ts === p.ts);
+    const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 5);
 
     if(match){
 
@@ -632,7 +632,7 @@ const ticketMap = {};
 
 (data.ticket_status || []).forEach(p => {
 
-  const match = (data.ticket_number || []).find(tn => tn.ts === p.ts);
+  const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 5);
 
   if(match){
 
@@ -650,7 +650,9 @@ const ticketMap = {};
 
 // STORE
 fullTicketList = Object.values(ticketMap);
-fullTicketList = fullTicketList.filter(t => t.ticket_customer === "ABC");
+fullTicketList = fullTicketList.filter(t => 
+  (t.ticket_customer || "").toLowerCase().trim() === "abc"
+);
 
 // APPLY FILTER
 applyFilters();

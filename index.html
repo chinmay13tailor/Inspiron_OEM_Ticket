@@ -580,7 +580,7 @@ const res = await fetch(
 {
 headers:{"X-Authorization":"Bearer "+JWT}
 });
-
+console.log("API STATUS:", res.status); 
 const data = await res.json();
 console.log("RAW API DATA:", data);
 console.log("ticket_number:", data.ticket_number);
@@ -627,7 +627,7 @@ Object.keys(ticketMap).forEach(ticketNo => {
   ticket.ticket_description = getLatest("ticket_description")?.value;
 
 });
-
+console.log("AFTER STEP2:", ticketMap);
 // 🔥 SPECIAL: HANDLE STATUS (LATEST ONLY)
 
 Object.keys(ticketMap).forEach(ticketNo => {
@@ -647,7 +647,7 @@ Object.keys(ticketMap).forEach(ticketNo => {
 console.log("BEFORE FILTER:", Object.values(ticketMap));
 // STORE
 fullTicketList = Object.values(ticketMap);
-
+console.log("FINAL LIST:", fullTicketList);
 fullTicketList.forEach(t=>{
   console.log("Customer Value:", t.ticket_customer);
 });
@@ -657,7 +657,7 @@ applyFilters();
 
 // ================= FILTER =================
 function applyFilters(){
-
+console.log("FILTER INPUT:", fullTicketList); 
 const priority = document.getElementById("priorityFilter")?.value || "ALL";
 
 let list = [...fullTicketList];
@@ -1016,7 +1016,6 @@ chat.innerHTML+=`
 });
 // 🔥 ADD THIS LINE HERE
 chat.scrollTop = chat.scrollHeight;
-console.log("ticketMap:", ticketMap);
 }
 
 // ================= SEND =================

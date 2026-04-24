@@ -603,49 +603,44 @@ const ticketMap = {};
 });
 console.log("ticketMap:", ticketMap);
 // STEP 2
-// STEP 2 (FIXED LOGIC)
 
-// 🔹 First handle all fields normally (EXCEPT status)
-// 🔥 HANDLE ALL FIELDS WITH LATEST LOGIC
 
-["ticket_subject","ticket_customer","ticket_machine","ticket_assign_to","ticket_criticality","ticket_description"].forEach(key=>{
+Object.keys(ticketMap).forEach(ticketNo => {
 
-  (data[key] || []).forEach(p => {
+  const ticket = ticketMap[ticketNo];
 
-    const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) <50);
+  // helper function
+  const getLatest = (key) => {
+    return (data[key] || [])
+      .filter(p => {
+        const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 50);
+        return match && match.value === ticketNo;
+      })
+      .sort((a,b)=> b.ts - a.ts)[0];
+  };
 
-    if(match){
-
-      const ticket = ticketMap[match.value];
-
-      // 🔥 store only latest value
-      if(!ticket[key + "_ts"] || p.ts > ticket[key + "_ts"]){
-        ticket[key] = p.value;
-        ticket[key + "_ts"] = p.ts;
-      }
-
-    }
-
-  });
+  ticket.ticket_subject = getLatest("ticket_subject")?.value;
+  ticket.ticket_customer = getLatest("ticket_customer")?.value;
+  ticket.ticket_machine = getLatest("ticket_machine")?.value;
+  ticket.ticket_assign_to = getLatest("ticket_assign_to")?.value;
+  ticket.ticket_criticality = getLatest("ticket_criticality")?.value;
+  ticket.ticket_description = getLatest("ticket_description")?.value;
 
 });
 
 // 🔥 SPECIAL: HANDLE STATUS (LATEST ONLY)
 
-(data.ticket_status || []).forEach(p => {
+Object.keys(ticketMap).forEach(ticketNo => {
 
-  const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) <50);
+  const latestStatus = (data.ticket_status || [])
+    .filter(p => {
+      const match = (data.ticket_number || []).find(tn => Math.abs(tn.ts - p.ts) < 50);
+      return match && match.value === ticketNo;
+    })
+    .sort((a,b)=> b.ts - a.ts)[0];
 
-  if(match){
-
-    const ticket = ticketMap[match.value];
-
-    // 👉 store only latest status
-    if(!ticket.ticket_status_ts || p.ts > ticket.ticket_status_ts){
-      ticket.ticket_status = p.value;
-      ticket.ticket_status_ts = p.ts;
-    }
-
+  if(latestStatus){
+    ticketMap[ticketNo].ticket_status = latestStatus.value;
   }
 
 });
@@ -1021,9 +1016,9 @@ chat.innerHTML+=`
 });
 // 🔥 ADD THIS LINE HERE
 chat.scrollTop = chat.scrollHeight;
-
-}
 console.log("ticketMap:", ticketMap);
+}
+
 // ================= SEND =================
 async function sendChatUI(){
 

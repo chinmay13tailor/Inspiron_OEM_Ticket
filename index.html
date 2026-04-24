@@ -341,17 +341,7 @@ font-size:13px;
   gap:10px;
 }
 
-.tabBtn{
-  background:#e5e7eb;
-  color:#333;
-  padding:6px 14px;
-  border-radius:8px;
-}
 
-.tabBtn.active{
-  background:#2563eb;
-  color:#fff;
-}
 /* COLORS */
 .kpiCard.total::before{background:#3b82f6;}
 .kpiCard.open::before{background:#22c55e;}
@@ -406,7 +396,6 @@ font-size:13px;
 <div class="container">
 
 <!-- LEFT -->
-
 <div class="left">
 
 <div class="ticketHeader">
@@ -421,11 +410,8 @@ font-size:13px;
 <option value="MEDIUM">MEDIUM</option>
 <option value="HIGH">HIGH</option>
 </select>
-
 </div>
-
 </div>
-
 <div id="ticketList" class="ticketList"></div>
 
 </div>
@@ -456,24 +442,17 @@ font-size:13px;
 </div>
 <!-- IMAGE POPUP -->
 <div class="popup" id="imagePopup">
-  <div class="popupContent" style="
-  width:90%;
-  max-width:1100px;
-  height:80vh;
-  display:flex;
-  flex-direction:column;
-  border-radius:14px;
-">
+  <div class="popupContent" style="width:80%; max-width:1000px; max-height:80vh; overflow-y:auto;">
 
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3>📁 Upload Attachment</h3>
+      <h3>Upload Image</h3>
       <button onclick="closeImagePopup()">❌</button>
     </div>
 
     <iframe 
       id="imageFrame"
       src=""
-      style="width:100%; flex:1; border:none; border-radius:10px;"
+      style="width:100%; height:90%; border:none; border-radius:10px;">
     </iframe>
 
   </div>
@@ -517,58 +496,27 @@ font-size:13px;
 
 <!-- GALLERY POPUP -->
 <div class="popup" id="galleryPopup">
+ <div class="popupContent" style="width:80%; max-width:1000px;">
 
-  <div class="popupContent" style="
-    width:90%;
-    max-width:1100px;
-    height:80vh;
-    display:flex;
-    flex-direction:column;
-    border-radius:14px;
-  ">
-
-    <!-- HEADER -->
-    <div style="
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      border-bottom:1px solid #eee;
-      padding-bottom:8px;
-    ">
-
-      <div style="display:flex; flex-direction:column; width:100%;">
-
-        <h3>📸 Gallery</h3>
-
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="tabBtn active" onclick="switchTab('image')" id="imgTab">Images</button>
-          <button class="tabBtn" onclick="switchTab('pdf')" id="pdfTab">Files</button>
-        </div>
-
-      </div>
-
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>📸 Gallery</h3>
       <button onclick="closeGallery()">❌</button>
-
     </div>
 
-    <!-- CONTENT -->
-    <div id="galleryContent" style="
-      margin-top:15px;
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(180px,200px));
-      gap:16px;
-      overflow-y:auto;
-      flex:1;
-      padding:20px;
-    ">
-    </div>
+<div id="galleryContent" 
+     style="
+       margin-top:20px;
+       display:grid;
+       grid-template-columns:repeat(5, 1fr);
+       gap:10px;
+     ">
+</div>
+</div>
 
   </div>
-  </div>
-
+</div>
 <script>
-console.log("🔥 SCRIPT START");
-let currentTab = "image";
+
 const API="https://plantwiz.pimateck.in/api";
 const DEVICE_ID="2b113dd0-2ce1-11f1-91db-cbfa9ac9843b";
 const JWT=new URLSearchParams(location.search).get("token")||"";
@@ -579,7 +527,7 @@ let chatInterval = null;
 
 // ================= LOAD TICKETS =================
 async function loadTickets(){
-console.log("🚀 loadTickets RUNNING");
+
 const res = await fetch(
 `${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=ticket_number,ticket_subject,ticket_status,ticket_customer,ticket_machine,ticket_assign_to,ticket_criticality,ticket_description&startTs=0&endTs=${Date.now()}&limit=10000&agg=NONE`,
 {
@@ -587,7 +535,8 @@ headers:{"X-Authorization":"Bearer "+JWT}
 });
 
 const data = await res.json();
-console.log("JWT =", JWT)// STEP 1
+
+// STEP 1
 const ticketMap = {};
 
 (data.ticket_number || []).forEach(p => {
@@ -603,8 +552,13 @@ const ticketMap = {};
   }
 
 });
-console.log("JWT =", JWT)
+
 // STEP 2
+// STEP 2 (FIXED LOGIC)
+
+// 🔹 First handle all fields normally (EXCEPT status)
+// 🔥 HANDLE ALL FIELDS WITH LATEST LOGIC
+
 ["ticket_subject","ticket_customer","ticket_machine","ticket_assign_to","ticket_criticality","ticket_description"].forEach(key=>{
 
   (data[key] || []).forEach(p => {
@@ -615,6 +569,7 @@ console.log("JWT =", JWT)
 
       const ticket = ticketMap[match.value];
 
+      // 🔥 store only latest value
       if(!ticket[key + "_ts"] || p.ts > ticket[key + "_ts"]){
         ticket[key] = p.value;
         ticket[key + "_ts"] = p.ts;
@@ -626,7 +581,8 @@ console.log("JWT =", JWT)
 
 });
 
-// STATUS
+// 🔥 SPECIAL: HANDLE STATUS (LATEST ONLY)
+
 (data.ticket_status || []).forEach(p => {
 
   const match = (data.ticket_number || []).find(tn => tn.ts === p.ts);
@@ -635,6 +591,7 @@ console.log("JWT =", JWT)
 
     const ticket = ticketMap[match.value];
 
+    // 👉 store only latest status
     if(!ticket.ticket_status_ts || p.ts > ticket.ticket_status_ts){
       ticket.ticket_status = p.value;
       ticket.ticket_status_ts = p.ts;
@@ -646,12 +603,12 @@ console.log("JWT =", JWT)
 
 // STORE
 fullTicketList = Object.values(ticketMap);
-fullTicketList = fullTicketList.filter(t => 
-  (t.ticket_customer || "").trim().toUpperCase() === "ABC"
-);
+fullTicketList = fullTicketList.filter(t => t.ticket_customer === "ABC");
 
+// APPLY FILTER
 applyFilters();
 }
+
 // ================= FILTER =================
 function applyFilters(){
 
@@ -974,7 +931,6 @@ headers:{"X-Authorization":"Bearer "+JWT}
 
 const data=await res.json();
 
-
 const rows={};
 
 Object.entries(data).forEach(([k,arr])=>{
@@ -1013,8 +969,8 @@ chat.innerHTML+=`
 });
 // 🔥 ADD THIS LINE HERE
 chat.scrollTop = chat.scrollHeight;
-}
 
+}
 // ================= SEND =================
 async function sendChatUI(){
 
@@ -1041,30 +997,7 @@ await loadChat(selectedTicket);
 }
 
 // INIT
-let ticketInterval = null;
-
-async function init(){
-
-  console.log("🔥 INIT CALLED");
-
-  await loadTickets();
-
-  console.log("🔥 AFTER LOAD");
-
-  if(ticketInterval){
-    clearInterval(ticketInterval);
-  }
-
-  ticketInterval = setInterval(async ()=>{
-
-    console.log("⏱ REFRESH");
-
-    await loadTickets();
-
-  }, 5000);
-}
-// 👉 CALL INIT
-init();
+loadTickets();
 
   function openImagePopup(){
 
@@ -1083,32 +1016,28 @@ function closeImagePopup(){
 }
 function openGallery(){
 
+  document.getElementById("galleryPopup").style.display = "flex";
+
   if(!selectedTicket){
     document.getElementById("galleryContent").innerHTML = "No ticket selected";
-    document.getElementById("galleryPopup").style.display = "flex";
     return;
   }
 
-  document.getElementById("galleryPopup").style.display = "flex";
-
-  currentTab = "image";
-
-  switchTab("image");
-  document.getElementById("imgTab").classList.add("active");
+  loadGalleryImages(selectedTicket);
 }
 
 function closeGallery(){
   document.getElementById("galleryPopup").style.display = "none";
 }
-async function loadGalleryImages(ticketNumber){
+  async function loadGalleryImages(ticketNumber){
 
   const container = document.getElementById("galleryContent");
-  container.innerHTML = "Loading...";
+  container.innerHTML = "";
 
   try{
 
     const res = await fetch(
-      `${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=image,image_number,pdf,pdf_number&startTs=0&endTs=${Date.now()}&limit=10000&agg=NONE`,
+      `${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=image,image_number&startTs=0&endTs=${Date.now()}&limit=10000&agg=NONE`,
       {
         headers: { "X-Authorization": "Bearer " + JWT }
       }
@@ -1116,100 +1045,54 @@ async function loadGalleryImages(ticketNumber){
 
     const data = await res.json();
 
+    if(!data.image || !data.image_number){
+      container.innerHTML = "No images found";
+      return;
+    }
+
     let html = "";
 
-    // 🔹 IMAGE TAB
-    if(currentTab === "image"){
+    data.image.forEach(img => {
 
-      (data.image || []).forEach(img => {
+      const match = (data.image_number || []).find(n => n.ts === img.ts);
 
-        const match = (data.image_number || []).find(n => Math.abs(n.ts - img.ts) < 5);
+      if(match && match.value === ticketNumber){
 
-        if(match && match.value === ticketNumber){
+html += `
+  <div style="
+    background:#fff;
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  ">
 
-          html += `
-          <div style="
-            width:100%;
-            max-width:200px;
-            background:#fff;
-            border-radius:14px;
-            overflow:hidden;
-            box-shadow:0 6px 16px rgba(0,0,0,0.08);
-          ">
+    <img src="${img.value}" 
+         style="
+           width:100%;
+           height:120px;
+           object-fit:cover;
+         ">
 
-            <img src="${img.value}" style="
-              width:100%;
-              height:140px;
-              object-fit:cover;
-              transition:0.3s;
-            " onmouseover="this.style.transform='scale(1.05)'"
-              onmouseout="this.style.transform='scale(1)'"
-            >
+    <div style="
+      font-size:10px;
+      padding:5px;
+      text-align:center;
+      color:#555;
+    ">
+      ${new Date(img.ts).toLocaleString()}
+    </div>
 
-            <div style="font-size:11px; padding:8px; text-align:center;">
-              ${new Date(img.ts).toLocaleString()}
-            </div>
+  </div>
+`;
+      }
 
-          </div>
-          `;
-        }
+    });
 
-      });
-
-    }
-
-    // 🔹 PDF TAB
-    if(currentTab === "pdf"){
-
-      (data.pdf || []).forEach(file => {
-
-        const match = (data.pdf_number || []).find(n => Math.abs(n.ts - file.ts) < 5);
-
-        if(match && match.value === ticketNumber){
-
-          html += `
-          <div style="
-            width:100%;
-            max-width:200px;
-            background:#fff;
-            border-radius:14px;
-            padding:16px;
-            text-align:center;
-            box-shadow:0 6px 16px rgba(0,0,0,0.08);
-          ">
-
-            <div style="font-size:40px;">📄</div>
-
-            <div style="font-size:13px; font-weight:600;">PDF File</div>
-
-            <a href="${file.value}" target="_blank" style="
-              padding:6px 14px;
-              background:#2563eb;
-              color:#fff;
-              border-radius:6px;
-              font-size:12px;
-              text-decoration:none;
-            ">
-              Open
-            </a>
-
-            <div style="font-size:10px; margin-top:6px;">
-              ${new Date(file.ts).toLocaleString()}
-            </div>
-
-          </div>
-          `;
-        }
-
-      });
-
-    }
-
-    container.innerHTML = html || "No files for this ticket";
+    container.innerHTML = html || "No images for this ticket";
 
   }catch(err){
     console.error(err);
-    container.innerHTML = "Error loading files";
+    container.innerHTML = "Error loading images";
   }
 }
 
@@ -1294,25 +1177,7 @@ async function submitAssign(){
 
   await loadTickets();
 selectTicket(selectedTicket);
-} 
-
-  function switchTab(tab){
-
-  currentTab = tab;
-
-  document.getElementById("imgTab").classList.remove("active");
-  document.getElementById("pdfTab").classList.remove("active");
-
-  if(tab === "image"){
-    document.getElementById("imgTab").classList.add("active");
-  }else{
-    document.getElementById("pdfTab").classList.add("active");
-  }
-
-  if(selectedTicket){
-    loadGalleryImages(selectedTicket);
-  }
-}
+}  
   
 </script>
 </body>
